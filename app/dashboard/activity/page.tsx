@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
+import { getActiveCompanyId } from '@/utils/active-company'
 
 type TapRow = {
   id: string
@@ -30,14 +31,14 @@ export default async function ActivityPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('company_id')
+    .select('company_id, role')
     .eq('id', user.id)
     .single()
 
-  if (!profile?.company_id) redirect('/login')
+  const companyId = await getActiveCompanyId(profile?.company_id, profile?.role)
+  if (!companyId) redirect('/login')
 
   const admin = await createAdminClient()
-  const companyId = profile.company_id
 
   const now = new Date()
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
@@ -123,10 +124,4 @@ export default async function ActivityPage() {
           <div className="py-16 text-center">
             <p className="text-4xl mb-3">📲</p>
             <p className="text-white font-semibold">No taps in the last 7 days</p>
-            <p className="text-gray-500 text-sm mt-1">Technicians tap their NFC card after completing a job to request a review</p>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
+            <p className="text-gray-500 text-sm mt-1">Technicians tap their NFC card after c

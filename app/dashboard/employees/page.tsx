@@ -2,6 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import ImageUploader from '@/components/dashboard/ImageUploader'
+import { getActiveCompanyId } from '@/utils/active-company'
 
 export default async function EmployeesPage() {
   const supabase = await createClient()
@@ -14,22 +15,23 @@ export default async function EmployeesPage() {
     .eq('id', user.id)
     .single()
 
-  if (!profile?.company_id) redirect('/login')
+  const companyId = await getActiveCompanyId(profile?.company_id, profile?.role)
+  if (!companyId) redirect('/login')
 
   const admin = await createAdminClient()
-  const isOwner = profile.role === 'owner' || profile.role === 'company_admin' || profile.role === 'super_admin'
+  const isOwner = profile?.role === 'owner' || profile?.role === 'company_admin' || profile?.role === 'super_admin'
 
   const { data: employees } = await admin
     .from('profiles')
     .select('id, first_name, last_name, avatar_url, created_at, cards(id, slug, status)')
-    .eq('company_id', profile.company_id)
+    .eq('company_id', companyId)
     .eq('role', 'employee')
     .order('first_name')
 
   const { data: reviewCounts } = await admin
     .from('reviews')
     .select('employee_id')
-    .eq('company_id', profile.company_id)
+    .eq('company_id', companyId)
 
   const countMap: Record<string, number> = {}
   reviewCounts?.forEach((r) => {
@@ -101,25 +103,4 @@ export default async function EmployeesPage() {
                       <span className="text-green-400 font-bold">{countMap[emp.id] || 0}</span>
                     </td>
                     <td className="px-5 py-4 text-gray-500 text-xs">
-                      {new Date(emp.created_at).toLocaleDateString()}
-                    </td>
-                  </tr>
-                )
-              }) : (
-                <tr>
-                  <td colSpan={4}>
-                    <div className="py-16 text-center">
-                      <p className="text-4xl mb-3">👥</p>
-                      <p className="text-white font-semibold">No employees yet</p>
-                      <p className="text-gray-500 text-sm mt-1">Contact CAL to add team members and assign NFC cards</p>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  )
-}
+                      {new Date(emp

@@ -21,12 +21,4 @@ export async function POST(request: NextRequest) {
     await createNotification(
       company_id,
       'goal',
-      'Review goal updated',
-      `Your monthly review goal has been set to ${monthly_target} reviews.`,
-      '/dashboard/goals'
-    )
-    return NextResponse.json({ success: true })
-  } catch {
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
-  }
-}
+      'Revi

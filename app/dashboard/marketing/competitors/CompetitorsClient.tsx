@@ -228,34 +228,4 @@ export default function CompetitorsClient({ company, competitors, history, memos
                       ) : delta < 0 ? (
                         <span className="text-green-400">{Math.abs(delta).toLocaleString()} behind</span>
                       ) : (
-                        <span className="text-gray-400">tied</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-right text-gray-400">
-                      {'snapshot_date' in entry ? (entry as Competitor).snapshot_date : 'live'}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Footer note */}
-      <p className="text-gray-600 text-xs">
-        Data sourced from Google Business Profile snapshots. Click &quot;Sync Now&quot; to refresh live data (requires Google Places API key in admin settings).
-        Last snapshot: {competitors[0]?.snapshot_date ?? 'N/A'}
-      </p>
-      </>
-      )}
-
-      <AdminMemoPanel
-        section="competitors"
-        companyId={companyId}
-        isSuperAdmin={isSuperAdmin}
-        initialMemos={memos}
-      />
-    </div>
-  )
-}
+                       

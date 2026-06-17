@@ -2,6 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import CompetitorsClient from './CompetitorsClient'
+import { getActiveCompanyId } from '@/utils/active-company'
 
 export default async function CompetitorsPage() {
   const supabase = await createClient()
@@ -14,15 +15,16 @@ export default async function CompetitorsPage() {
     .eq('id', user.id)
     .single()
 
-  if (!profile?.company_id) redirect('/dashboard')
+  const companyId = await getActiveCompanyId(profile?.company_id, profile?.role)
+  if (!companyId) redirect('/dashboard')
 
   const admin = await createAdminClient()
-  const isSuperAdmin = profile.role === 'super_admin'
+  const isSuperAdmin = profile?.role === 'super_admin'
 
   const { data: company } = await admin
     .from('companies')
     .select('id, name, google_review_count, google_star_rating, feature_competitors')
-    .eq('id', profile.company_id)
+    .eq('id', companyId)
     .single()
 
   if (!company?.feature_competitors) redirect('/dashboard')
@@ -30,7 +32,7 @@ export default async function CompetitorsPage() {
   const { data: snapshots } = await admin
     .from('competitor_snapshots')
     .select('competitor_name, star_rating, review_count, snapshot_date, google_place_id')
-    .eq('company_id', profile.company_id)
+    .eq('company_id', companyId)
     .order('snapshot_date', { ascending: false })
 
   const seen = new Set<string>()
@@ -56,13 +58,13 @@ export default async function CompetitorsPage() {
     admin
       .from('competitor_snapshots')
       .select('competitor_name, review_count, snapshot_date')
-      .eq('company_id', profile.company_id)
+      .eq('company_id', companyId)
       .gte('snapshot_date', thirtyDaysAgo.toISOString().split('T')[0])
       .order('snapshot_date', { ascending: true }),
     admin
       .from('admin_memos')
       .select('*')
-      .eq('company_id', profile.company_id)
+      .eq('company_id', companyId)
       .eq('section', 'competitors')
       .order('is_pinned', { ascending: false })
       .order('created_at', { ascending: false }),
@@ -76,16 +78,4 @@ export default async function CompetitorsPage() {
         star_rating: Number(company.google_star_rating ?? 0),
       }}
       competitors={latestSnapshots.map(s => ({
-        name: s.competitor_name,
-        review_count: s.review_count ?? 0,
-        star_rating: Number(s.star_rating ?? 0),
-        snapshot_date: s.snapshot_date,
-        google_place_id: s.google_place_id ?? null,
-      }))}
-      history={history ?? []}
-      memos={memos || []}
-      companyId={profile.company_id}
-      isSuperAdmin={isSuperAdmin}
-    />
-  )
-}
+        name: s.competitor_name

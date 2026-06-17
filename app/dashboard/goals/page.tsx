@@ -2,6 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import GoalSetter from '@/components/dashboard/GoalSetter'
+import { getActiveCompanyId } from '@/utils/active-company'
 
 function ProgressRing({ pct, color = '#22c55e', size = 120 }: { pct: number; color?: string; size?: number }) {
   const clamped = Math.min(100, Math.max(0, pct))
@@ -44,18 +45,17 @@ export default async function GoalsPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('company_id, role, companies(name, feature_ads, feature_gbp)')
+    .select('company_id, role')
     .eq('id', user.id)
     .single()
 
-  if (!profile?.company_id) redirect('/login')
-
-  const companyRaw = Array.isArray(profile.companies) ? profile.companies[0] : profile.companies
-  const company = companyRaw as { name: string; feature_ads: boolean; feature_gbp: boolean } | null
-  const isAdmin = ['super_admin', 'company_admin', 'owner'].includes(profile.role)
+  const companyId = await getActiveCompanyId(profile?.company_id, profile?.role)
+  if (!companyId) redirect('/login')
 
   const admin = await createAdminClient()
-  const companyId = profile.company_id
+  const { data: coData } = await admin.from('companies').select('name, feature_ads, feature_gbp').eq('id', companyId).single()
+  const company = coData as { name: string; feature_ads: boolean; feature_gbp: boolean } | null
+  const isAdmin = ['super_admin', 'company_admin', 'owner'].includes(profile?.role || '')
 
   const now = new Date()
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
@@ -197,10 +197,4 @@ export default async function GoalsPage() {
               <p>• You need <span className="text-white font-semibold">{reviewTarget - curReviews} more reviews</span> this month to hit your target.</p>
             )}
             <p>• Make sure every technician taps their NFC card after every job.</p>
-            <p>• Focus on jobs where customers seem satisfied — those are your best review opportunities.</p>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
+            <p>• Focus on jobs where customers seem satisfied — those are 

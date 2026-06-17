@@ -3,6 +3,7 @@ import { createAdminClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import BadgesPanel from './BadgesPanel'
+import { getActiveCompanyId } from '@/utils/active-company'
 
 type Period = 'daily' | 'weekly' | 'monthly' | 'all'
 type LeaderboardRow = {
@@ -47,13 +48,16 @@ export default async function LeaderboardPage({
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('company_id, companies(feature_leaderboard)')
+    .select('company_id, role')
     .eq('id', user.id)
     .single()
 
-  if (!profile?.company_id) redirect('/login')
+  const companyId = await getActiveCompanyId(profile?.company_id, profile?.role)
+  if (!companyId) redirect('/login')
 
-  const features = (Array.isArray(profile.companies) ? profile.companies[0] : profile.companies) as { feature_leaderboard: boolean } | null
+  const admin = await createAdminClient()
+  const { data: coData } = await admin.from('companies').select('feature_leaderboard').eq('id', companyId).single()
+  const features = coData as { feature_leaderboard: boolean } | null
   if (!features?.feature_leaderboard) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -62,10 +66,9 @@ export default async function LeaderboardPage({
     )
   }
 
-  const admin = await createAdminClient()
   const [{ data: rows }, { data: badges }] = await Promise.all([
-    admin.from('leaderboard').select('*').eq('company_id', profile.company_id),
-    admin.from('badges').select('badge_type').eq('company_id', profile.company_id),
+    admin.from('leaderboard').select('*').eq('company_id', companyId),
+    admin.from('badges').select('badge_type').eq('company_id', companyId),
   ])
 
   const sorted = (rows as LeaderboardRow[] ?? [])
@@ -145,52 +148,4 @@ export default async function LeaderboardPage({
                 {sorted.map((row, idx) => {
                   const rank = idx + 1
                   const periodCount = reviewCountForPeriod(row, activePeriod)
-                  return (
-                    <tr key={row.employee_id} className={rank === 1 ? 'bg-green-500/5' : 'hover:bg-gray-800/40 transition-colors'}>
-                      <td className="px-5 py-4">
-                        {medalEmoji[rank]
-                          ? <span className="text-lg">{medalEmoji[rank]}</span>
-                          : <span className="text-gray-400 font-mono text-sm">#{rank}</span>
-                        }
-                      </td>
-                      <td className="px-5 py-4">
-                        <Link href={'/dashboard/employees/' + row.employee_id}
-                          className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-                          <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
-                            style={{ background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-primary)aa)' }}>
-                            {row.first_name[0]?.toUpperCase()}
-                          </div>
-                          <div>
-                            <p className="text-white text-sm font-medium hover:text-green-400 transition-colors">{row.first_name}</p>
-                            {row.position && <p className="text-gray-500 text-xs">{row.position}</p>}
-                          </div>
-                        </Link>
-                      </td>
-                      <td className="px-5 py-4 text-right">
-                        <span className="text-green-400 font-bold text-lg">{periodCount}</span>
-                      </td>
-                      <td className="px-5 py-4 text-right text-yellow-400 font-medium text-sm">
-                        {activePeriod === 'all' ? row.five_star_reviews : '—'}
-                      </td>
-                      <td className="px-5 py-4 text-right text-white text-sm">
-                        {row.avg_rating ? row.avg_rating + ' ⭐' : '—'}
-                      </td>
-                      <td className="px-5 py-4 text-right">
-                        <span className={'text-sm font-medium ' + (row.conversion_rate >= 50 ? 'text-green-400' : 'text-gray-400')}>
-                          {row.conversion_rate > 0 ? row.conversion_rate + '%' : '—'}
-                        </span>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      {/* Achievement Badges */}
-      <BadgesPanel earnedKeys={earnedKeys} />
-    </div>
-  )
-}
+             

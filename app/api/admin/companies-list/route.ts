@@ -1,0 +1,26 @@
+import { NextResponse } from 'next/server'
+import { createClient, createAdminClient } from '@/utils/supabase/server'
+
+export async function GET() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (profile?.role !== 'super_admin') {
+    return NextResponse.json({ error: 'Super admin only' }, { status: 403 })
+  }
+
+  const admin = await createAdminClient()
+  const { data: companies } = await admin
+    .from('companies')
+    .select('id, name, slug')
+    .order('name')
+
+  return NextResponse.json({ companies: companies || [] })
+}

@@ -7,6 +7,7 @@ import SignOutButton from './SignOutButton'
 import MobileBottomNav from './MobileBottomNav'
 import GlobalSearch from './GlobalSearch'
 import CommandPalette from './CommandPalette'
+import CompanySwitcher from './CompanySwitcher'
 
 interface NavItem {
   href: string
@@ -27,6 +28,9 @@ interface MobileLayoutProps {
   subtitle?: string
   logoUrl?: string | null
   primaryColor?: string
+  isSuperAdmin?: boolean
+  viewingAs?: string | null     // company name being viewed
+  viewingAsId?: string | null   // company id being viewed
 }
 
 export default function MobileLayout({
@@ -36,6 +40,9 @@ export default function MobileLayout({
   subtitle,
   logoUrl,
   primaryColor = '#22c55e',
+  isSuperAdmin = false,
+  viewingAs = null,
+  viewingAsId = null,
 }: MobileLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
@@ -49,7 +56,7 @@ export default function MobileLayout({
         />
       )}
 
-      {/* Sidebar — hidden on mobile unless open */}
+      {/* Sidebar */}
       <div
         className={
           'fixed lg:static inset-y-0 left-0 z-40 transform transition-transform duration-300 ease-in-out lg:transform-none ' +
@@ -67,7 +74,7 @@ export default function MobileLayout({
 
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-        {/* Header — sticky so it stays visible while content scrolls */}
+        {/* Header */}
         <header className="sticky top-0 z-20 h-16 bg-gray-900 border-b border-gray-800 flex items-center justify-between px-4 md:px-6 flex-shrink-0">
           <div className="flex items-center gap-3">
             {/* Hamburger — mobile only */}
@@ -86,21 +93,9 @@ export default function MobileLayout({
             </div>
           </div>
           <div className="flex items-center gap-1">
-            <GlobalSearch />
-            <NotificationBell />
-            <SignOutButton />
-          </div>
-        </header>
-        <CommandPalette />
-
-        {/* Main scrollable area — add pb-16 on mobile for bottom nav */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 pb-20 lg:pb-6">
-          {children}
-        </main>
-      </div>
-
-      {/* Mobile bottom navigation */}
-      <MobileBottomNav />
-    </div>
-  )
-}
+            {/* Company switcher — super admin only */}
+            {isSuperAdmin && (
+              <div className="hidden sm:block mr-2">
+                <CompanySwitcher
+                  currentOverrideId={viewingAsId || null}
+                  currentOverride

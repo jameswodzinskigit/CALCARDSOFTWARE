@@ -48,9 +48,4 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div className="flex h-screen bg-gray-950">
       <Sidebar sections={adminSections} title="CAL Admin" />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header title="Super Admin" subtitle="CAL OS Platform" />
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
-      </div>
-    </div>
-  )
-}
+        <Header title="Super A

@@ -67,31 +67,4 @@ export default function Sidebar({ sections, title = 'CAL OS', logoUrl, primaryCo
               {section.items.map((item) => {
                 const active = item.exact
                   ? pathname === item.href
-                  : pathname === item.href || pathname.startsWith(item.href + '/')
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={onClose}
-                    className="flex items-center gap-2.5 px-2 py-2 rounded-lg text-sm font-medium transition-colors border"
-                    style={active ? {
-                      color: primaryColor,
-                      backgroundColor: primaryColor + '1a',
-                      borderColor: primaryColor + '33',
-                    } : {
-                      color: '#9ca3af',
-                      borderColor: 'transparent',
-                    }}
-                  >
-                    <span dangerouslySetInnerHTML={{ __html: item.icon }} />
-                    {item.label}
-                  </Link>
-                )
-              })}
-            </div>
-          </div>
-        ))}
-      </nav>
-    </aside>
-  )
-}
+                  : pathname === item.href || 

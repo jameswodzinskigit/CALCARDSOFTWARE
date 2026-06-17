@@ -115,11 +115,4 @@ export default async function TapPage({ params }: Props) {
         )}
 
         <Link href={'/tech/' + slug}
-          className="block text-xs text-gray-600 hover:text-gray-400 mt-6 transition-colors">
-          {firstName}&apos;s personal stats &#8250;
-        </Link>
-        <p className="text-xs text-gray-700 mt-1">Powered by CalCard &middot; Review Gamification Platform</p>
-      </div>
-    </div>
-  )
-}
+          className="block text-xs text-gray-600
