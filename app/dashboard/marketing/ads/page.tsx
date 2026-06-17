@@ -2,6 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import AdsClient from './AdsClient'
+import SetupBanner from '@/components/ui/SetupBanner'
 
 export default async function AdsPage() {
   const supabase = await createClient()
@@ -16,7 +17,25 @@ export default async function AdsPage() {
 
   const companyRaw = Array.isArray(profile?.companies) ? profile?.companies[0] : profile?.companies
   const company = companyRaw as { feature_ads: boolean } | null
-  if (!profile?.company_id || !company?.feature_ads) redirect('/dashboard')
+  if (!profile?.company_id) redirect('/dashboard')
+
+  // Show setup banner if Ads not yet activated
+  if (!company?.feature_ads) {
+    return (
+      <div className="space-y-6 page-fade-in">
+        <div>
+          <h1 className="text-white font-bold text-xl">Google Ads</h1>
+          <p className="text-gray-500 text-sm mt-0.5">Ad performance & spend</p>
+        </div>
+        <SetupBanner
+          icon="📊"
+          title="Google Ads not connected yet"
+          description="Google Ads tracking is not active for your account. Talk to your account manager to get this set up and start seeing your ad performance here."
+          variant="info"
+        />
+      </div>
+    )
+  }
 
   const admin = await createAdminClient()
   const companyId = profile.company_id

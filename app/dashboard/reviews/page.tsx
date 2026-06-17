@@ -2,6 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import ShareRatingCard from '@/components/dashboard/ShareRatingCard'
+import SetupBanner from '@/components/ui/SetupBanner'
 import Link from 'next/link'
 
 const STAR = '⭐'
@@ -41,6 +42,33 @@ export default async function DashboardReviewsPage({
   const companyId = profile.company_id
   const offset = (page - 1) * PAGE_SIZE
 
+  // Fetch company details (name + google_place_id)
+  const { data: company } = await admin
+    .from('companies')
+    .select('name, google_place_id')
+    .eq('id', companyId)
+    .single()
+
+  const companyName = company?.name || 'Your Business'
+
+  // If Google not linked, show setup state
+  if (!company?.google_place_id) {
+    return (
+      <div className="space-y-6 page-fade-in">
+        <div>
+          <h1 className="text-white font-bold text-xl">Reviews</h1>
+          <p className="text-gray-500 text-sm mt-0.5">Your Google reviews</p>
+        </div>
+        <SetupBanner
+          icon="📍"
+          title="Google Business connection not set up yet"
+          description="Your account manager is finishing your Google Business Profile connection. Once linked, your reviews will appear here automatically — nothing else needed on your end."
+          variant="info"
+        />
+      </div>
+    )
+  }
+
   // Fetch stats on ALL reviews (for KPI row)
   const { data: allRatingRows } = await admin
     .from('reviews')
@@ -74,14 +102,6 @@ export default async function DashboardReviewsPage({
     reviewed_at: string; attribution_method: string | null; profiles: { first_name: string } | null
   }>
   const attributed = allReviews.filter(r => r.attribution_method).length
-
-  const { data: profileFull } = await supabase
-    .from('profiles')
-    .select('companies(name)')
-    .eq('id', user.id)
-    .single()
-  const companyRaw = Array.isArray(profileFull?.companies) ? profileFull.companies[0] : profileFull?.companies
-  const companyName = (companyRaw as { name: string } | null)?.name || 'Your Business'
 
   const totalPages = Math.ceil((filteredCount || 0) / PAGE_SIZE)
   const hasPrev = page > 1
