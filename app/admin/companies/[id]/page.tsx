@@ -70,6 +70,18 @@ export default function CompanyDetailPage() {
   const [discovering, setDiscovering] = useState(false)
   const [discoverResult, setDiscoverResult] = useState<string | null>(null)
 
+  // Google Ads assignment
+  type AdsAccount = { id: string; formatted_id: string; name: string; currency_code: string; status: string }
+  type AdsAssignment = { customer_id: string; account_name: string } | null
+  const [adsAssignment, setAdsAssignment] = useState<AdsAssignment>(null)
+  const [adsAccounts, setAdsAccounts] = useState<AdsAccount[]>([])
+  const [adsLoading, setAdsLoading] = useState(false)
+  const [adsLoaded, setAdsLoaded] = useState(false)
+  const [selectedAdsAccount, setSelectedAdsAccount] = useState('')
+  const [adsSaving, setAdsSaving] = useState(false)
+  const [adsMessage, setAdsMessage] = useState('')
+  const [adsError, setAdsError] = useState('')
+
   // Theme state
   const [themeColor, setThemeColor] = useState('')
   const [themeSaving, setThemeSaving] = useState(false)
@@ -210,6 +222,74 @@ export default function CompanyDetailPage() {
     } finally {
       setDiscovering(false)
     }
+  }
+
+  const loadAdsSection = async () => {
+    setAdsLoading(true)
+    setAdsError('')
+    try {
+      // Load assignment from supabase
+      const { data: assign } = await supabase
+        .from('company_google_ads_assignments')
+        .select('customer_id, account_name')
+        .eq('company_id', id)
+        .maybeSingle()
+      setAdsAssignment(assign)
+      if (assign) setSelectedAdsAccount(assign.customer_id)
+
+      // Load available accounts from our API
+      const res = await fetch('/api/google-ads/accounts')
+      if (res.ok) {
+        const data = await res.json()
+        setAdsAccounts(data.accounts || [])
+      }
+      // 404 = no connection yet, that's fine
+    } catch {
+      // silent
+    }
+    setAdsLoading(false)
+    setAdsLoaded(true)
+  }
+
+  const handleAdsSave = async () => {
+    if (!selectedAdsAccount) return
+    setAdsSaving(true); setAdsMessage(''); setAdsError('')
+    const account = adsAccounts.find(a => a.id === selectedAdsAccount)
+    const res = await fetch('/api/google-ads/assign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        company_id: id,
+        customer_id: selectedAdsAccount,
+        account_name: account?.name || selectedAdsAccount,
+      }),
+    })
+    if (res.ok) {
+      setAdsMessage('Account assigned!')
+      setAdsAssignment({ customer_id: selectedAdsAccount, account_name: account?.name || selectedAdsAccount })
+      setCompany(prev => prev ? { ...prev, feature_ads: true } : prev)
+      setTimeout(() => setAdsMessage(''), 2500)
+    } else {
+      const data = await res.json()
+      setAdsError(data.error || 'Failed to assign')
+    }
+    setAdsSaving(false)
+  }
+
+  const handleAdsUnassign = async () => {
+    if (!confirm('Remove Google Ads assignment from this company? The Ads Dashboard will be disabled.')) return
+    setAdsSaving(true); setAdsMessage(''); setAdsError('')
+    const res = await fetch(`/api/google-ads/assign?company_id=${id}`, { method: 'DELETE' })
+    if (res.ok) {
+      setAdsAssignment(null)
+      setSelectedAdsAccount('')
+      setCompany(prev => prev ? { ...prev, feature_ads: false } : prev)
+      setAdsMessage('Unassigned.')
+      setTimeout(() => setAdsMessage(''), 2500)
+    } else {
+      setAdsError('Failed to unassign')
+    }
+    setAdsSaving(false)
   }
 
   const saveTheme = async () => {
@@ -480,6 +560,96 @@ export default function CompanyDetailPage() {
             {themeSaving ? '…' : themeSaved ? '✓ Saved' : 'Set Color'}
           </button>
         </div>
+      </div>
+
+      {/* Google Ads Account */}
+      <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+        <div className="flex items-center justify-between p-5 border-b border-gray-800">
+          <div>
+            <h2 className="text-white font-semibold">Google Ads Account</h2>
+            <p className="text-gray-400 text-xs mt-0.5">Assign a Google Ads client account to this company</p>
+          </div>
+          {!adsLoaded && (
+            <button
+              onClick={loadAdsSection}
+              disabled={adsLoading}
+              className="text-sm text-green-400 hover:text-green-300 disabled:opacity-50 transition-colors"
+            >
+              {adsLoading ? 'Loading…' : 'Load'}
+            </button>
+          )}
+        </div>
+
+        {adsLoaded && (
+          <div className="p-5 space-y-4">
+            {adsMessage && (
+              <div className="bg-green-900/20 border border-green-700/40 text-green-300 rounded-lg px-4 py-2 text-sm">{adsMessage}</div>
+            )}
+            {adsError && (
+              <div className="bg-red-900/20 border border-red-700/40 text-red-300 rounded-lg px-4 py-2 text-sm">{adsError}</div>
+            )}
+
+            {adsAssignment && (
+              <div className="bg-gray-800/60 rounded-xl p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-gray-400 text-xs mb-1">Currently Assigned</p>
+                  <p className="text-white text-sm font-medium">{adsAssignment.account_name}</p>
+                  <p className="text-gray-400 text-xs font-mono mt-0.5">{adsAssignment.customer_id}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs bg-green-900/40 text-green-400 px-2 py-0.5 rounded-full">Active</span>
+                  <button
+                    onClick={handleAdsUnassign}
+                    disabled={adsSaving}
+                    className="text-xs text-red-400 hover:text-red-300 disabled:opacity-50 transition-colors"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {adsAccounts.length > 0 ? (
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs text-gray-400 mb-1 block">
+                    {adsAssignment ? 'Change Account' : 'Select Account'}
+                  </label>
+                  <select
+                    value={selectedAdsAccount}
+                    onChange={e => setSelectedAdsAccount(e.target.value)}
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green-500"
+                  >
+                    <option value="">— Choose an account —</option>
+                    {adsAccounts.map(acc => (
+                      <option key={acc.id} value={acc.id}>
+                        {acc.name} ({acc.id})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <button
+                  onClick={handleAdsSave}
+                  disabled={adsSaving || !selectedAdsAccount}
+                  className="bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors"
+                >
+                  {adsSaving ? 'Saving…' : adsAssignment ? 'Update Assignment' : 'Assign Account'}
+                </button>
+              </div>
+            ) : (
+              <div className="text-sm text-gray-400">
+                No Google Ads accounts found.{' '}
+                <Link href="/admin/integrations/google-ads" className="text-green-400 hover:text-green-300">
+                  Connect Google Ads Manager Account →
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
+
+        {!adsLoaded && !adsLoading && (
+          <p className="px-5 py-4 text-gray-500 text-sm">Click "Load" to view Google Ads assignment.</p>
+        )}
       </div>
 
       {/* Competitors section */}
