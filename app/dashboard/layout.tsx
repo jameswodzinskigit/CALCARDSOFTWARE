@@ -53,7 +53,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const logoUrl = company?.logo_url || null
 
   // Fetch company theme color
-  let primaryColor = '#22c55e'
+  let primaryColor = '#3b82f6'
   if (activeCompanyId) {
     const { data: theme } = await admin
       .from('company_themes')
