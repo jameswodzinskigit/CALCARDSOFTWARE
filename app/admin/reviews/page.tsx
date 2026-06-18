@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/utils/supabase/server'
+import ReviewReplyButton from '@/components/admin/ReviewReplyButton'
 
 const STAR = '⭐'
 
@@ -10,6 +11,7 @@ export default async function AdminReviewsPage() {
     .select(`
       id, reviewer_name, rating, body, reviewed_at,
       attribution_method, source,
+      reply_text, replied_at,
       profiles:employee_id ( first_name ),
       companies:company_id ( name )
     `)
@@ -58,7 +60,15 @@ export default async function AdminReviewsPage() {
                       {stars <= 2 && (
                         <span className="text-xs px-2 py-0.5 rounded-full bg-red-900/40 text-red-400">Private — low rating</span>
                       )}
+                      {review.reply_text && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-900/40 text-blue-400">✓ Replied</span>
+                      )}
                     </div>
+                    <ReviewReplyButton
+                      reviewId={review.id}
+                      existingReply={review.reply_text}
+                      repliedAt={review.replied_at}
+                    />
                   </div>
                   <p className="text-gray-500 text-xs flex-shrink-0">
                     {new Date(review.reviewed_at).toLocaleDateString()}
