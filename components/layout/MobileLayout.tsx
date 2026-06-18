@@ -39,7 +39,7 @@ export default function MobileLayout({
   title,
   subtitle,
   logoUrl,
-  primaryColor = '#22c55e',
+  primaryColor = '#3b82f6',
   isSuperAdmin = false,
   viewingAs = null,
   viewingAsId = null,
