@@ -2,6 +2,14 @@ import { createAdminClient } from '@/utils/supabase/server'
 import StatsCard from '@/components/dashboard/StatsCard'
 import Link from 'next/link'
 
+const GBP_METRICS = [
+  { key: 'views',               label: 'Profile Views',        icon: '👁️' },
+  { key: 'search_impressions',  label: 'Search Impressions',   icon: '🔍' },
+  { key: 'calls',               label: 'Calls',                icon: '📞' },
+  { key: 'website_clicks',      label: 'Website Clicks',       icon: '🖱️' },
+  { key: 'direction_requests',  label: 'Direction Requests',   icon: '📍' },
+]
+
 export default async function AdminPage() {
   const supabase = await createAdminClient()
 
@@ -12,6 +20,7 @@ export default async function AdminPage() {
     { count: tapCount },
     { data: recentCompanies },
     { data: spotlightReviews },
+    { data: gbpRows },
   ] = await Promise.all([
     supabase.from('companies').select('*', { count: 'exact', head: true }),
     supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'employee'),
@@ -20,7 +29,18 @@ export default async function AdminPage() {
     supabase.from('companies').select('id, name, slug, created_at').order('created_at', { ascending: false }).limit(5),
     supabase.from('reviews').select('id, reviewer_name, rating, body, reviewed_at, profiles:employee_id(first_name), companies:company_id(name)')
       .eq('rating', 5).not('body', 'is', null).neq('body', '').order('reviewed_at', { ascending: false }).limit(20),
+    // GBP insights: sum last 30 days across all companies, one row per metric
+    supabase.from('gbp_insights')
+      .select('metric_name, metric_value')
+      .gte('date', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]),
   ])
+
+  // Aggregate GBP totals across all companies
+  const gbpTotals: Record<string, number> = {}
+  for (const row of gbpRows || []) {
+    gbpTotals[row.metric_name] = (gbpTotals[row.metric_name] || 0) + row.metric_value
+  }
+  const hasGbpData = Object.keys(gbpTotals).length > 0
 
   const reviews = (spotlightReviews || []) as Array<{
     id: string; reviewer_name: string | null; rating: number; body: string | null; reviewed_at: string;
@@ -39,6 +59,38 @@ export default async function AdminPage() {
         <StatsCard title="Total Taps" value={tapCount || 0} icon="&#128242;" />
       </div>
 
+      {/* GBP Insights — last 30 days */}
+      <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+        <div className="p-5 border-b border-gray-800 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">📊</span>
+            <h3 className="text-white font-semibold">Google Business Profile Insights</h3>
+            <span className="text-xs text-gray-500 ml-1">last 30 days · all companies</span>
+          </div>
+          {!hasGbpData && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-900/40 text-yellow-500 border border-yellow-800/40">
+              Connecting…
+            </span>
+          )}
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 divide-x divide-y divide-gray-800">
+          {GBP_METRICS.map(({ key, label, icon }) => (
+            <div key={key} className="p-4 text-center">
+              <div className="text-xl mb-1">{icon}</div>
+              <div className="text-2xl font-bold text-white">
+                {hasGbpData ? (gbpTotals[key] ?? 0).toLocaleString() : '—'}
+              </div>
+              <div className="text-xs text-gray-500 mt-0.5">{label}</div>
+            </div>
+          ))}
+        </div>
+        {!hasGbpData && (
+          <div className="px-5 py-3 border-t border-gray-800 text-xs text-gray-600">
+            Push data to <code className="text-gray-500">POST /api/gbp/insights</code> with a Bearer {'{DIGEST_SECRET}'} header to populate this card.
+          </div>
+        )}
+      </div>
+
       {(bestReview || funniestReview) && (
         <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
           <div className="p-5 border-b border-gray-800 flex items-center justify-between">
@@ -53,7 +105,7 @@ export default async function AdminPage() {
                   <span className="text-xs font-semibold text-yellow-400 uppercase tracking-wide">Best Review</span>
                 </div>
                 <p className="text-gray-200 text-sm leading-relaxed italic">
-                  &ldquo;{bestReview.body?.slice(0, 180)}{(bestReview.body?.length || 0) > 180 ? '\u2026' : ''}&rdquo;
+                  &ldquo;{bestReview.body?.slice(0, 180)}{(bestReview.body?.length || 0) > 180 ? '…' : ''}&rdquo;
                 </p>
                 <p className="text-gray-500 text-xs">
                   &#8212; {bestReview.reviewer_name || 'Anonymous'}
@@ -124,4 +176,4 @@ export default async function AdminPage() {
       </div>
     </div>
   )
-}
+          }
