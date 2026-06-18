@@ -22,7 +22,7 @@ interface SidebarProps {
   onClose?: () => void
 }
 
-export default function Sidebar({ sections, title = 'CAL OS', logoUrl, primaryColor = '#22c55e', onClose }: SidebarProps) {
+export default function Sidebar({ sections, title = 'CAL OS', logoUrl, primaryColor = '#3b82f6', onClose }: SidebarProps) {
   const pathname = usePathname()
 
   return (
