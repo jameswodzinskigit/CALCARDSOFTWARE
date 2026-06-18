@@ -1,77 +1,65 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
-    darkMode: ["class"],
-    content: [
-          "./pages/**/*.{js,ts,jsx,tsx,mdx}",
-          "./components/**/*.{js,ts,jsx,tsx,mdx}",
-          "./app/**/*.{js,ts,jsx,tsx,mdx}",
-        ],
-    theme: {
-          extend: {
-                  colors: {
-                            brand: {
-                                        50: '#f0fdf4',
-                                        500: '#22c55e',
-                                        600: '#16a34a',
-                                        700: '#15803d',
-                            },
-                            cal: {
-                                        gold:        '#f59e0b',
-                                        'gold-dark': '#d97706',
-                                        blue:        '#3b82f6',
-                                        green:       '#10b981',
-                            },
-                            gray: {
-                                        50:  '#f8fafc',
-                                        100: '#eef2f7',
-                                        200: '#dce3ee',
-                                        300: '#b4c0d3',
-                                        400: '#8492a8',
-                                        500: '#586480',
-                                        600: '#3a4260',
-                                        700: '#252d42',
-                                        800: '#161c2c',
-                                        900: '#0c0f1a',
-                                        950: '#060810',
-                            },
-                  },
-                  borderRadius: {
-                            lg: "var(--radius)",
-                            md: "calc(var(--radius) - 2px)",
-                            sm: "calc(var(--radius) - 4px)",
-                  },
-                  fontFamily: {
-                            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-                  },
-                  boxShadow: {
-                            'card':       '0 4px 24px rgba(0, 0, 0, 0.5)',
-                            'card-hover': '0 12px 40px rgba(0, 0, 0, 0.6)',
-                            'glow-sm':    '0 0 12px rgba(16, 185, 129, 0.15)',
-                            'glow':       '0 0 24px rgba(16, 185, 129, 0.2)',
-                            'glow-gold':  '0 4px 20px rgba(245, 158, 11, 0.25)',
-                  },
-                  animation: {
-                            'fade-in':  'fadeIn 0.25s ease-out',
-                            'slide-up': 'slideUp 0.35s ease-out',
-                  },
-                  keyframes: {
-                            fadeIn: {
-                                        '0%':   { opacity: '0' },
-                                        '100%': { opacity: '1' },
-                            },
-                            slideUp: {
-                                        '0%':   { opacity: '0', transform: 'translateY(8px)' },
-                                        '100%': { opacity: '1', transform: 'translateY(0)' },
-                            },
-                  },
-                  backgroundImage: {
-                            'cal-gradient':     'linear-gradient(135deg, #f59e0b 0%, #3b82f6 50%, #10b981 100%)',
-                            'card-gradient':    'linear-gradient(145deg, #0f1320 0%, #0c0f1a 100%)',
-                            'sidebar-gradient': 'linear-gradient(180deg, #090c16 0%, #060810 100%)',
-                  },
-          },
+  darkMode: ["class"],
+  content: [
+    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./app/**/*.{js,ts,jsx,tsx,mdx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        // Remap gray → dark navy: every bg-gray-* / border-gray-* / text-gray-* picks up the premium palette
+        gray: {
+          50:  '#f8fafc',
+          100: '#eef2f7',
+          200: '#dce3ee',
+          300: '#b4c0d3',
+          400: '#8492a8',
+          500: '#586480',
+          600: '#3a4260',
+          700: '#252d42',
+          800: '#161c2c',
+          900: '#0c0f1a',
+          950: '#060810',
+        },
+        // CAL accent palette — blue/teal for premium digital-agency aesthetic
+        cal: {
+          blue:        '#3b82f6',
+          'blue-dim':  '#1d4ed8',
+          'blue-glow': 'rgba(59,130,246,0.15)',
+          teal:        '#0ea5e9',
+          gold:        '#f59e0b',
+          navy:        '#0c0f1a',
+        },
+        // brand remapped to blue (was green)
+        brand: {
+          50:  '#eff6ff',
+          100: '#dbeafe',
+          200: '#bfdbfe',
+          300: '#93c5fd',
+          400: '#60a5fa',
+          500: '#3b82f6',
+          600: '#2563eb',
+          700: '#1d4ed8',
+          800: '#1e40af',
+          900: '#1e3a8a',
+        },
+      },
+      borderRadius: {
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
+      },
+      boxShadow: {
+        'glow-blue': '0 0 20px rgba(59,130,246,0.25), 0 4px 16px rgba(0,0,0,0.4)',
+        'glow-teal': '0 0 20px rgba(14,165,233,0.25), 0 4px 16px rgba(0,0,0,0.4)',
+        'card':      '0 2px 12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)',
+        'card-hover':'0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04)',
+      },
     },
-    plugins: [require("tailwindcss-animate")],
+  },
+  plugins: [require("tailwindcss-animate")],
 };
 export default config;
